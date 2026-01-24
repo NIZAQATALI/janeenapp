@@ -1,8 +1,6 @@
 import User from '../models/User.js';
 import VerificationCode from "../models/Verify.js";
 import nodemailer from "nodemailer";
-import { Resend } from "resend";
-const resend = new Resend(process.env.RESEND_API_KEY);
 import { OAuth2Client } from "google-auth-library";
 import jwt from "jsonwebtoken";
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
