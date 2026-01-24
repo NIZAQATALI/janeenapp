@@ -4,14 +4,10 @@
   "description": "MERN-EventsApp backend",
   "type": "module",
   "main": "index.js",
- 
-  
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js"
   },
-
-
   "keywords": [],
   "author": "Nizaqat Ali",
   "license": "ISC",
@@ -34,6 +30,7 @@
     "nodemon": "^3.1.10",
     "pdfkit": "^0.15.2",
     "qrcode": "^1.5.4",
+    "resend": "^6.8.0",
     "socket.io": "^4.8.1",
     "stripe": "^17.5.0"
   }
