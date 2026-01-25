@@ -5,10 +5,34 @@ import Notification from "../models/Notification.js";
 import agenda from "../utils/agenda.js"; // Your Agenda instance
 
 /* ------------------ GET USER NOTIFICATIONS ------------------ */
-export const getUserNotifications = async (req, res) => {
+// export const getUserNotifications = async (req, res) => {
+//   try {
+//     const userId = req.user._id;
+//     const notifications = await Notification.find({ userId }).sort({ createdAt: -1 });
+//     res.status(200).json({
+//       success: true,
+//       count: notifications.length,
+//       data: notifications,
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: "Failed to fetch notifications",
+//       error: error.message,
+//     });
+//   }
+// };
+  export const getUserNotifications = async (req, res) => {
   try {
     const userId = req.user._id;
-    const notifications = await Notification.find({ userId }).sort({ createdAt: -1 });
+
+    const notifications = await Notification.find({
+      userId,
+      title: { $exists: true, $ne: "" }
+    })
+      .sort({ createdAt: -1 })
+      .limit(5);
+
     res.status(200).json({
       success: true,
       count: notifications.length,
@@ -22,7 +46,7 @@ export const getUserNotifications = async (req, res) => {
     });
   }
 };
-  
+
 export const markAsRead = async (req, res) => {
   try {
     const userId = req.user._id;
