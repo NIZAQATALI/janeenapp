@@ -110,7 +110,7 @@ io.on("connection", (socket) => {
 /* ---------------------- 3. MIDDLEWARE ---------------------- */
  app.use(express.json());
 const allowedOrigins = [
-  'http://localhost:5173','http://localhost:3000','https://janeen-admin.netlify.app','https://janeenapp.netlify.app/'];
+  'http://localhost:5173','http://localhost:3000','https://janeen-admin.netlify.app','https://janeenapp.netlify.app'];
 
 app.use(
   cors({
