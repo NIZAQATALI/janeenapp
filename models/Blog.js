@@ -20,7 +20,9 @@ const blogSchema = new mongoose.Schema(
     },
       authorname: {
       type: String,
-  
+    },
+     adminnote: {
+      type: String,
     },
 
     thumbnail: {
