@@ -11,7 +11,7 @@ router.post('/adult/loginUser',loginUser)
 router.post('/child/loginChild',childLogin)
 router.post('/adult/createUser',upload.single('photo'), createNewUser)
 router.put('/adult/updateUser',upload.single('photo'),verifyJWT,updateUser)
-router.post("/ovulation", calculateOvulation);
+router.post("/ovulation",  verifyJWT,calculateOvulation);
 router.delete('/adult/deleteUser', deleteUser)
 router.get('/adult/getUser', verifyJWT,getSingleUser)
 router.get('/adult/getAllChild', verifyJWT,getAllChildren)

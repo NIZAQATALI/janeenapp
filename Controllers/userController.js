@@ -165,15 +165,137 @@ export const loginUser = async (req, res) => {
     });
   }
 };
+// export const calculateOvulation = async (req, res) => {
+//   try {
+//     const {
+//       shortestCycle,
+//       longestCycle,
+//       cycleStartDate
+//     } = req.body;
+
+//     // Validation (book-aligned)
+//     if (!shortestCycle || !longestCycle || !cycleStartDate) {
+//       return res.status(400).json({
+//         success: false,
+//         message:
+//           "shortestCycle, longestCycle, and cycleStartDate are required"
+//       });
+//     }
+
+//     if (
+//       shortestCycle < 21 ||
+//       longestCycle > 40 ||
+//       longestCycle < shortestCycle
+//     ) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid menstrual cycle values"
+//       });
+//     }
+
+//     // Book formula
+//     const fertileStartDay = shortestCycle - 18;
+//     const fertileEndDay = longestCycle - 11;
+
+//     // Date calculations
+//     const cycleStart = new Date(cycleStartDate);
+
+//     const fertileStartDate = new Date(cycleStart);
+//     fertileStartDate.setDate(
+//       cycleStart.getDate() + fertileStartDay - 1
+//     );
+
+//     const fertileEndDate = new Date(cycleStart);
+//     fertileEndDate.setDate(
+//       cycleStart.getDate() + fertileEndDay - 1
+//     );
+
+//     // Estimated ovulation = midpoint of fertile window
+//     const estimatedOvulationDay = Math.round(
+//       (fertileStartDay + fertileEndDay) / 2
+//     );
+
+//     const ovulationDate = new Date(cycleStart);
+//     ovulationDate.setDate(
+//       cycleStart.getDate() + estimatedOvulationDay - 1
+//     );
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Fertile window calculated successfully",
+//       data: {
+//         fertileWindow: {
+//           startDay: fertileStartDay,
+//           endDay: fertileEndDay,
+//           startDate: fertileStartDate
+//             .toISOString()
+//             .split("T")[0],
+//           endDate: fertileEndDate
+//             .toISOString()
+//             .split("T")[0]
+//         },
+//         estimatedOvulation: {
+//           day: estimatedOvulationDay,
+//           date: ovulationDate
+//             .toISOString()
+//             .split("T")[0]
+//         },
+//         method:
+//           "Calendar method as described in the book (Section 7)",
+//         disclaimer:
+//           "This tool is for educational and planning purposes only and does not replace medical consultation."
+//       }
+//     });
+//   } catch (error) {
+//     console.error("Ovulation calculation error:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Unable to calculate ovulation",
+//       error: error.message
+//     });
+//   }
+// };
 export const calculateOvulation = async (req, res) => {
   try {
+    const userId = req.user?.id; // Requires auth middleware
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized. Please login."
+      });
+    }
+
     const {
       shortestCycle,
       longestCycle,
       cycleStartDate
     } = req.body;
 
-    // Validation (book-aligned)
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    // 🔹 If no new input is sent → return saved result
+    if (
+      !shortestCycle &&
+      !longestCycle &&
+      !cycleStartDate &&
+      user.fertilityData?.fertileStartDay
+    ) {
+      return res.status(200).json({
+        success: true,
+        message: "Returning saved fertile window",
+        data: user.fertilityData
+      });
+    }
+
+    // 🔹 Validation (Book-aligned)
     if (!shortestCycle || !longestCycle || !cycleStartDate) {
       return res.status(400).json({
         success: false,
@@ -193,11 +315,10 @@ export const calculateOvulation = async (req, res) => {
       });
     }
 
-    // Book formula
+    // 📖 Book formula
     const fertileStartDay = shortestCycle - 18;
     const fertileEndDay = longestCycle - 11;
 
-    // Date calculations
     const cycleStart = new Date(cycleStartDate);
 
     const fertileStartDate = new Date(cycleStart);
@@ -210,7 +331,6 @@ export const calculateOvulation = async (req, res) => {
       cycleStart.getDate() + fertileEndDay - 1
     );
 
-    // Estimated ovulation = midpoint of fertile window
     const estimatedOvulationDay = Math.round(
       (fertileStartDay + fertileEndDay) / 2
     );
@@ -220,32 +340,32 @@ export const calculateOvulation = async (req, res) => {
       cycleStart.getDate() + estimatedOvulationDay - 1
     );
 
+    // 🔹 Save in user model
+    user.fertilityData = {
+      shortestCycle,
+      longestCycle,
+      cycleStartDate: new Date(cycleStartDate),
+
+      fertileStartDay,
+      fertileEndDay,
+
+      fertileStartDate,
+      fertileEndDate,
+
+      estimatedOvulationDay,
+      estimatedOvulationDate: ovulationDate,
+
+      updatedAt: new Date()
+    };
+
+    await user.save();
+
     return res.status(200).json({
       success: true,
-      message: "Fertile window calculated successfully",
-      data: {
-        fertileWindow: {
-          startDay: fertileStartDay,
-          endDay: fertileEndDay,
-          startDate: fertileStartDate
-            .toISOString()
-            .split("T")[0],
-          endDate: fertileEndDate
-            .toISOString()
-            .split("T")[0]
-        },
-        estimatedOvulation: {
-          day: estimatedOvulationDay,
-          date: ovulationDate
-            .toISOString()
-            .split("T")[0]
-        },
-        method:
-          "Calendar method as described in the book (Section 7)",
-        disclaimer:
-          "This tool is for educational and planning purposes only and does not replace medical consultation."
-      }
+      message: "Fertile window calculated and saved successfully",
+      data: user.fertilityData
     });
+
   } catch (error) {
     console.error("Ovulation calculation error:", error);
     return res.status(500).json({
@@ -255,7 +375,6 @@ export const calculateOvulation = async (req, res) => {
     });
   }
 };
-
 export const getLiveLeaderboard = async (req, res) => {
   const users = await User.find()
     .select("username points photo")

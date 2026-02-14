@@ -39,6 +39,23 @@ points: {
 loginCount: { type: Number, default: 0 },
 blogsRead: { type: Number, default: 0 },
 blogsCreated: { type: Number, default: 0 },
+fertilityData: {
+  shortestCycle: { type: Number },
+  longestCycle: { type: Number },
+  cycleStartDate: { type: Date },
+
+  fertileStartDay: { type: Number },
+  fertileEndDay: { type: Number },
+
+  fertileStartDate: { type: Date },
+  fertileEndDate: { type: Date },
+
+  estimatedOvulationDay: { type: Number },
+  estimatedOvulationDate: { type: Date },
+
+  updatedAt: { type: Date }
+},
+
 
   },
   { timestamps: true }
