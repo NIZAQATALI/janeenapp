@@ -51,20 +51,19 @@ export const verifyJWT = async (req, res, next) => {
       user = await Child.findById(id).select("-password");
     }
     else {
-        console.log("admin.................................")
+    
       user = await User.findById(id).select("-password");
     }
-        console.log(user,"req.user")
         if (!user) {
             throw new ApiResponse(401, "Unauthorized request - User not found");
         }
 
-        // Attach the user to the request object for further use
+      
         req.user = user;
   
-        next(); // Proceed to the next middleware or route handler
+        next(); 
     } catch (error) {
-        // Handle JWT verification errors and other exceptions
+     
         next(new ApiResponse(401, error?.message || "Unauthorized request"));
     }}
 
@@ -83,24 +82,8 @@ export const verifyUser = (req, res, next)=>{
 
 }
 
-//3) TO VERIFY ADMIN
-// export const verifyAdmin = (req, res, next) => {
-//     verifyToken(req, res, next, () => {
-//         console.log(`Role inside callback: '${req.user.role}'`);
-//         if (req.user.role && req.user.role.trim() === 'admin') {
-//             next();
-//         } else {
-//             return res.status(401).json({
-//                 status: "failed",
-//                 success: "false",
-//                 message: "You are not Authorized"
-//             });
-//         }
-//     });
-// };
-// middleware/verifyAdmin.js
+
 export const verifyAdmin = (req, res, next) => {
-    console.log(req.user.role,"req.user.role")
     if (req.user && req.user.role === "admin") {
         return next();
     } 
