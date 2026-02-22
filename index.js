@@ -17,6 +17,7 @@ import leaderboardRoute from "./routes/leaderboard.js";
 import geminiRoutes from "./routes/gaminai.js";
 import shareRoutes from "./routes/social.js";
 import { startAgenda } from './utils/agenda.js';
+import enrollmentRoutes from "./routes/enrollment.js";
 
 dotenv.config({ path: './config.env' });
 
@@ -113,6 +114,8 @@ app.use("/api/v1/gemini", geminiRoutes);
 app.use("/api/v1/share", shareRoutes);
 
 
+
+app.use("/api/enrollment", enrollmentRoutes);
 
 /* ---------------------- 5. MONGO + SERVER + AGENDA START ---------------------- */
 const startServer = async () => {
