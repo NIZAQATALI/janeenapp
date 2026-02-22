@@ -20,7 +20,7 @@ const courseSchema = new mongoose.Schema(
       enum: ["Beginner", "Intermediate", "Advanced"],
       default: "Beginner",
     },
-
+pdf: { type: String },
     category: { type: String }, 
 
     lessons: [

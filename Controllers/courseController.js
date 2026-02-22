@@ -156,7 +156,55 @@ console.log(updatedCourse,"updatedCourse")
   }
 };
 
+export const updateCoursePdf = async (req, res) => {
+  const _id = req.params.id;
+  const file = req.file?.buffer;
+  let pdfUrl = null;
 
+  try {
+    if (!file) {
+      return res.status(400).json({
+        success: false,
+        message: "PDF file is required.",
+      });
+    }
+    const cloudinaryResponse = await uploadOnCloudinary(file, "courses/pdfs");
+    if (!cloudinaryResponse) {
+      return res.status(500).json({
+        success: false,
+        message: "PDF upload failed.",
+      });
+    }
+
+    pdfUrl = cloudinaryResponse.secure_url;
+
+    const updatedCourse = await Course.findByIdAndUpdate(
+      _id,
+      { $set: { pdf: pdfUrl } },
+      { new: true }
+    );
+
+    if (!updatedCourse) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Course PDF uploaded successfully.",
+      data: updatedCourse,
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Course PDF cannot be uploaded.",
+      error: err.message,
+    });
+  }
+};
 export const deleteCourse = async (req, res) => {
   try {
     const course = await Course.findByIdAndDelete(req.params.id);
