@@ -45,6 +45,10 @@ const questionSchema = new mongoose.Schema({
   options: [{ type: String }],
   correctAnswer: { type: Number }, 
 });
+const noteSchema = new mongoose.Schema({
+  heading: { type: String },
+  description: { type: String }
+});
 
 const contentBlockSchema = new mongoose.Schema({
   type: {
@@ -55,6 +59,7 @@ const contentBlockSchema = new mongoose.Schema({
 
   heading: String,
   description: String,
+  notes: [noteSchema],
 
   // For Gallery
   // images: [
@@ -63,6 +68,7 @@ const contentBlockSchema = new mongoose.Schema({
   //     description: String,
   //   },
   // ],
+  
   images: [
   {
     url: String,
