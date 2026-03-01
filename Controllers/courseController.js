@@ -11,15 +11,12 @@ export const createCourse = async (req, res) => {
       category,
       isPublished,
     } = req.body;
-
     const file = req.file;
     let thumbnailUrl = null;
-
       console.log(req.file)
     if (file) {
       const cloudinaryResponse = await uploadOnCloudinary(file.buffer);
       if (cloudinaryResponse) {
-       
         thumbnailUrl = cloudinaryResponse.secure_url;
         console.log(thumbnailUrl)
       } else {
@@ -29,7 +26,6 @@ export const createCourse = async (req, res) => {
         });
       }
     }
-
     const newCourse = new Course({
       title,
       description,
@@ -223,4 +219,303 @@ export const deleteCourse = async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
+
+
 };
+export const addNoteBlock = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { heading, description } = req.body;
+
+    const course = await Course.findById(id);
+    if (!course) {
+      return res.status(404).json({ success: false, message: "Course not found" });
+    }
+
+    course.content.push({
+      type: "note",
+      heading,
+      description,
+    });
+
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Note block added",
+      data: course,
+    });
+
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+export const addMediaBlock = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "Video file is required",
+      });
+    }
+
+    const upload = await uploadOnCloudinary(req.file.buffer, "courses/videos");
+
+    const course = await Course.findById(id);
+    if (!course) {
+      return res.status(404).json({ success: false, message: "Course not found" });
+    }
+
+    course.content.push({
+      type: "media",
+      heading: req.body.heading || "Video Lecture",
+      videoUrl: upload.secure_url,
+    });
+
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Media block added",
+      data: course,
+    });
+
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+export const addGalleryBlock = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Images are required",
+      });
+    }
+
+    const uploadedImages = [];
+
+    for (let file of req.files) {
+      const upload = await uploadOnCloudinary(file.buffer, "courses/gallery");
+
+      uploadedImages.push({
+        url: upload.secure_url,
+        description: req.body.description || "Slide Image",
+      });
+    }
+
+    const course = await Course.findById(id);
+    if (!course) {
+      return res.status(404).json({ success: false, message: "Course not found" });
+    }
+
+    course.content.push({
+      type: "gallery",
+      heading: req.body.heading || "Gallery",
+      images: uploadedImages,
+    });
+
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Gallery block added",
+      data: course,
+    });
+
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+export const addQuizBlock = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { heading, questions } = req.body;
+
+    const course = await Course.findById(id);
+    if (!course) {
+      return res.status(404).json({ success: false, message: "Course not found" });
+    }
+
+    course.content.push({
+      type: "quiz",
+      heading,
+      questions,
+    });
+
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Quiz block added",
+      data: course,
+    });
+
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+export const deleteContentBlock = async (req, res) => {
+  try {
+    const { id, contentId } = req.params;
+
+    const course = await Course.findById(id);
+    if (!course) {
+      return res.status(404).json({ success: false, message: "Course not found" });
+    }
+
+    course.content = course.content.filter(
+      (block) => block._id.toString() !== contentId
+    );
+
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Content block deleted",
+      data: course,
+    });
+
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+export const updateContentBlock = async (req, res) => {
+  try {
+    const { id, contentId } = req.params;
+
+    const course = await Course.findById(id);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found",
+      });
+    }
+
+    const block = course.content.id(contentId);
+    if (!block) {
+      return res.status(404).json({
+        success: false,
+        message: "Content block not found",
+      });
+    }
+
+    /* ----------------------------------
+       UPDATE TEXT FIELDS (ALL TYPES)
+    ---------------------------------- */
+    if (req.body.heading !== undefined) {
+      block.heading = req.body.heading;
+    }
+
+    if (req.body.description !== undefined) {
+      block.description = req.body.description;
+    }
+
+    /* ----------------------------------
+       UPDATE NOTE TYPE
+    ---------------------------------- */
+    if (block.type === "note") {
+      if (req.body.description !== undefined) {
+        block.description = req.body.description;
+      }
+    }
+
+    /* ----------------------------------
+       UPDATE QUIZ TYPE
+    ---------------------------------- */
+    if (block.type === "quiz") {
+      if (req.body.questions) {
+        block.questions = req.body.questions;
+      }
+    }
+
+    /* ----------------------------------
+       UPDATE MEDIA TYPE (Replace Video)
+    ---------------------------------- */
+    if (block.type === "media" && req.files?.media) {
+      const videoFile = req.files.media[0].buffer;
+
+      const upload = await uploadOnCloudinary(videoFile, "courses/videos");
+
+      if (!upload) {
+        return res.status(500).json({
+          success: false,
+          message: "Video upload failed",
+        });
+      }
+
+      block.videoUrl = upload.secure_url;
+    }
+
+    /* ----------------------------------
+       UPDATE GALLERY TYPE (Replace Images)
+    ---------------------------------- */
+    if (block.type === "gallery" && req.files?.images) {
+      const uploadedImages = [];
+
+      for (let file of req.files.images) {
+        const upload = await uploadOnCloudinary(
+          file.buffer,
+          "courses/gallery"
+        );
+
+        uploadedImages.push({
+          url: upload.secure_url,
+          description: req.body.imageDescription || "Slide Image",
+        });
+      }
+
+      block.images = uploadedImages;
+    }
+
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Content block updated successfully",
+      data: course,
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Content update failed",
+      error: err.message,
+    });
+  }
+};
+// export const updateContentBlock = async (req, res) => {
+//   try {
+//     const { id, contentId } = req.params;
+
+//     const course = await Course.findById(id);
+//     if (!course) {
+//       return res.status(404).json({ success: false, message: "Course not found" });
+//     }
+
+//     const block = course.content.id(contentId);
+//     if (!block) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Content block not found",
+//       });
+//     }
+
+//     Object.assign(block, req.body);
+
+//     await course.save();
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Content block updated",
+//       data: course,
+//     });
+
+//   } catch (err) {
+//     res.status(500).json({ success: false, message: err.message });
+//   }
+// };
