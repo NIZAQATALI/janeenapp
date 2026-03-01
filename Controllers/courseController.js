@@ -1,5 +1,5 @@
 import Course from "../models/Course.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { deleteOnCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 export const createCourse = async (req, res) => {
   try {
     const {
@@ -286,33 +286,119 @@ export const addMediaBlock = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+// export const addGalleryBlock = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     if (!req.files || req.files.length === 0) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Images are required",
+//       });
+//     }
+
+//     const uploadedImages = [];
+
+//     for (let file of req.files) {
+//       const upload = await uploadOnCloudinary(file.buffer, "courses/gallery");
+
+//       uploadedImages.push({
+//         url: upload.secure_url,
+//         description: req.body.description || "Slide Image",
+//       });
+//     }
+
+//     const course = await Course.findById(id);
+//     if (!course) {
+//       return res.status(404).json({ success: false, message: "Course not found" });
+//     }
+
+//     course.content.push({
+//       type: "gallery",
+//       heading: req.body.heading || "Gallery",
+//       images: uploadedImages,
+//     });
+
+//     await course.save();
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Gallery block added",
+//       data: course,
+//     });
+
+//   } catch (err) {
+//     res.status(500).json({ success: false, message: err.message });
+//   }
+// };
+
 export const addGalleryBlock = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // 1️⃣ Validate files
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
         success: false,
-        message: "Images are required",
+        message: "At least one image is required",
       });
     }
 
+    // 2️⃣ Find course
+    const course = await Course.findById(id);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found",
+      });
+    }
+
+    // 3️⃣ Parse descriptions safely
+    let descriptionsArray = [];
+
+    if (req.body.descriptions) {
+      try {
+        console.log(req.body.descriptions,"req.body.descriptions...............")
+        descriptionsArray = JSON.parse(req.body.descriptions);
+
+        if (!Array.isArray(descriptionsArray)) {
+          descriptionsArray = [];
+        }
+
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid descriptions JSON format",
+        });
+      }
+    }
+
+    // 4️⃣ Upload images
     const uploadedImages = [];
 
-    for (let file of req.files) {
-      const upload = await uploadOnCloudinary(file.buffer, "courses/gallery");
+    for (let i = 0; i < req.files.length; i++) {
+      const file = req.files[i];
+
+      const upload = await uploadOnCloudinary(
+        file.buffer,
+        "courses/gallery"
+      );
+
+      if (!upload) {
+        return res.status(500).json({
+          success: false,
+          message: "Image upload failed",
+        });
+      }
 
       uploadedImages.push({
         url: upload.secure_url,
-        description: req.body.description || "Slide Image",
+        public_id: upload.public_id,
+        description: descriptionsArray[i] || [], // per image points
       });
     }
 
-    const course = await Course.findById(id);
-    if (!course) {
-      return res.status(404).json({ success: false, message: "Course not found" });
-    }
-
+    // 5️⃣ Push gallery block
     course.content.push({
       type: "gallery",
       heading: req.body.heading || "Gallery",
@@ -321,14 +407,18 @@ export const addGalleryBlock = async (req, res) => {
 
     await course.save();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: "Gallery block added",
+      message: "Gallery block added successfully",
       data: course,
     });
 
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({
+      success: false,
+      message: "Gallery block creation failed",
+      error: err.message,
+    });
   }
 };
 export const addQuizBlock = async (req, res) => {
@@ -454,23 +544,54 @@ export const updateContentBlock = async (req, res) => {
     /* ----------------------------------
        UPDATE GALLERY TYPE (Replace Images)
     ---------------------------------- */
+    // if (block.type === "gallery" && req.files?.images) {
+    //   const uploadedImages = [];
+
+    //   for (let file of req.files.images) {
+    //     const upload = await uploadOnCloudinary(
+    //       file.buffer,
+    //       "courses/gallery"
+    //     );
+
+    //     uploadedImages.push({
+    //       url: upload.secure_url,
+    //       description: req.body.imageDescription || "Slide Image",
+    //     });
+    //   }
+
+    //   block.images = uploadedImages;
+    // }
     if (block.type === "gallery" && req.files?.images) {
-      const uploadedImages = [];
 
-      for (let file of req.files.images) {
-        const upload = await uploadOnCloudinary(
-          file.buffer,
-          "courses/gallery"
-        );
-
-        uploadedImages.push({
-          url: upload.secure_url,
-          description: req.body.imageDescription || "Slide Image",
-        });
-      }
-
-      block.images = uploadedImages;
+  // 🔥 1️⃣ Delete old images from Cloudinary
+  for (let image of block.images) {
+    if (image.public_id) {
+      await deleteOnCloudinary(image.public_id, "image");
     }
+  }
+
+  // 🔥 2️⃣ Upload new images
+  const uploadedImages = [];
+
+  for (let file of req.files.images) {
+    const upload = await uploadOnCloudinary(
+      file.buffer,
+      "courses/gallery"
+    );
+
+    uploadedImages.push({
+      url: upload.secure_url,
+      public_id: upload.public_id,
+      description: Array.isArray(req.body.description)
+        ? req.body.description
+        : req.body.description
+        ? [req.body.description]
+        : []
+    });
+  }
+
+  block.images = uploadedImages;
+}
 
     await course.save();
 
@@ -488,7 +609,7 @@ export const updateContentBlock = async (req, res) => {
     });
   }
 };
-// export const updateContentBlock = async (req, res) => {
+
 //   try {
 //     const { id, contentId } = req.params;
 

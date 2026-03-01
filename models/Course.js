@@ -57,12 +57,22 @@ const contentBlockSchema = new mongoose.Schema({
   description: String,
 
   // For Gallery
+  // images: [
+  //   {
+  //     url: String,
+  //     description: String,
+  //   },
+  // ],
   images: [
-    {
-      url: String,
-      description: String,
-    },
-  ],
+  {
+    url: String,
+     public_id: { type: String, required: true },
+    description: {
+      type: [String],  
+      default: []
+    }
+  }
+],
 
   // For Media
   videoUrl: String,

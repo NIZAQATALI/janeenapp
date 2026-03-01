@@ -25,22 +25,7 @@
 //         return null;
 //     }
 // }
-// const deleteOnCloudinary = async (public_id) => {
-//     try {
-//         if (!public_id) return null
-//         //upload the file on cloudinary
-//         const response = await cloudinary.uploader.destroy(public_id)
-//         console.log(" cloudinary response",response)
-//         // file has been deleted successfull
-   
-       
-//         return response;
 
-//     } catch (error) {
-      
-//         return null;
-//     }
-// }
 
 
 // exports= {uploadOnCloudinary,deleteOnCloudinary}
@@ -87,5 +72,24 @@ export const uploadOnCloudinary = async (fileBuffer, folderName) => {
     return null;
   }
 };
+export const deleteOnCloudinary = async (
+  public_id,
+  resource_type = "image"   // default image
+) => {
+  try {
+    if (!public_id) return null;
 
+    const response = await cloudinary.uploader.destroy(public_id, {
+      resource_type, // "image" | "video" | "raw"
+    });
+
+    console.log("Cloudinary delete response:", response);
+
+    return response;
+
+  } catch (error) {
+    console.error("Cloudinary delete error:", error.message);
+    return null;
+  }
+};
 
