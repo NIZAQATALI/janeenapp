@@ -23,6 +23,10 @@ const enrollmentSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    quizScore: {
+      type: Number,
+      default: 0,
+    },
 
     status: {
       type: String,

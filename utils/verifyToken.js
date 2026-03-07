@@ -4,6 +4,7 @@ import Child from '../models/Child.js'
 //custom middlewares
 
 import { ApiResponse } from '../utils/ApiResponse.js';
+import Enrollment from '../models/enrollment.js';
 //1) TO VERIFY TOKEN
 export const verifyToken = (req, res, next)=>{
     const token = req.cookies.accessToken
@@ -29,7 +30,7 @@ export const verifyJWT = async (req, res, next) => {
         // Extract token from cookies or Authorization header
         const token =
             req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "");
-   console.log(token,"kkkkkkkkkk")
+  
         if (!token) {
             throw new ApiResponse(401, "Unauthorized request - No token provided");
         }
@@ -39,7 +40,7 @@ export const verifyJWT = async (req, res, next) => {
         
         // Fetch the user from the database
      const { id, role } = decodedToken;
-     console.log(id, role,"id and roll")
+   
 
     let user;
 
@@ -94,3 +95,37 @@ export const verifyAdmin = (req, res, next) => {
     });
 };
 
+export const checkEnrollment = async (req, res, next) => {
+  try {
+
+    const userId = req.user._id;
+    const role = req.user.role;
+    const { courseId } = req.params;
+
+    // ✅ Admin can access without enrollment
+    if (role === "admin") {
+      return next();
+    }
+
+    // ✅ Check enrollment for normal users
+    const enrollment = await Enrollment.findOne({
+      user: userId,
+      course: courseId,
+    });
+
+    if (!enrollment) {
+      return res.status(403).json({
+        success: false,
+        message: "User not enrolled in this course",
+      });
+    }
+
+    next();
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

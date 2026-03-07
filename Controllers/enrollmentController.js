@@ -49,3 +49,52 @@ export const enrollStudent = async (req, res) => {
     });
   }
 };
+export const getUserCourses = async (req, res) => {
+
+  try {
+
+    const userId = req.user._id;
+
+    const enrollments = await Enrollment.find({ user: userId })
+      .populate("course");
+
+    return res.status(200).json({
+      success: true,
+      data: enrollments,
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+
+  }
+
+};
+export const getCourseStudents = async (req, res) => {
+
+  try {
+
+    const { courseId } = req.query;
+
+    const students = await Enrollment.find({
+      course: courseId,
+    }).populate("user");
+
+    res.status(200).json({
+      success: true,
+      data: students,
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+
+  }
+
+};
