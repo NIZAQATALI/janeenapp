@@ -70,6 +70,7 @@ export const createCourse = async (req, res) => {
 //   }
 // };
 import Enrollment from "../models/enrollment.js";
+import QuizAttempt from "../models/quizAttempt.js";
 
 export const getAllCourses = async (req, res) => {
   try {
@@ -730,3 +731,153 @@ export const updateContentBlock = async (req, res) => {
 //     res.status(500).json({ success: false, message: err.message });
 //   }
 // };
+export const getCourseQuiz = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const course = await Course.findById(courseId);
+    const quizBlock = course.content.find(
+      (c) => c.type === "quiz"
+    );
+    if (!quizBlock) {
+      return res.status(404).json({
+        success: false,
+        message: "Quiz not found",
+      });
+    }
+    // remove correctAnswer
+    const questions = quizBlock.questions.map(q => ({
+      _id: q._id,
+      question: q.question,
+      options: q.options
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: questions
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      success:false,
+      message:error.message
+    });
+
+  }
+};
+export const submitQuiz = async (req, res) => {
+  try {
+
+    const userId = req.user._id;
+    const { courseId } = req.params;
+    const { answers } = req.body;
+
+    const course = await Course.findById(courseId);
+
+    const quizBlock = course.content.find(
+      (c) => c.type === "quiz"
+    );
+
+    if (!quizBlock) {
+      return res.status(404).json({
+        success:false,
+        message:"Quiz not found"
+      })
+    }
+
+    let score = 0;
+
+    for (const answer of answers) {
+      const question = quizBlock.questions.id(answer.questionId);
+      if (!question) continue;
+      if (question.correctAnswer === answer.selectedOption) {
+        score += 1;
+      }
+    }
+    const totalQuestions = quizBlock.questions.length;
+    const attempt = await QuizAttempt.create({
+      user: userId,
+      course: courseId,
+      answers,
+      score,
+      totalQuestions
+    });
+
+    res.status(200).json({
+      success:true,
+      message:"Quiz submitted",
+      result:{
+        score,
+        totalQuestions
+      },
+      data:attempt
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      success:false,
+      message:error.message
+    });
+
+  }
+};
+export const getUserQuizResult = async (req, res) => {
+  try {
+
+    const userId = req.user._id;
+    const { courseId } = req.params;
+
+    const attempt = await QuizAttempt.findOne({
+      user: userId,
+      course: courseId
+    })
+    .populate("course", "title");
+
+    if (!attempt) {
+      return res.status(404).json({
+        success:false,
+        message:"Quiz not attempted"
+      });
+    }
+
+    res.status(200).json({
+      success:true,
+      data: attempt
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      success:false,
+      message:error.message
+    });
+
+  }
+};
+export const getCourseQuizResults = async (req, res) => {
+  try {
+
+    const { courseId } = req.params;
+
+    const results = await QuizAttempt.find({
+      course: courseId
+    })
+    .populate("user", "username email")
+    .populate("course", "title");
+
+    res.status(200).json({
+      success:true,
+      count: results.length,
+      data: results
+    });
+
+  } catch (error) {
+
+    res.status(500).json({
+      success:false,
+      message:error.message
+    });
+
+  }
+};

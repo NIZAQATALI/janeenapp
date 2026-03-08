@@ -12,12 +12,16 @@ import {
   deleteContentBlock,
   updateContentBlock,
   addNoteBlock,
+  getCourseQuiz,
+  submitQuiz,
+  getUserQuizResult,
+  getCourseQuizResults,
 } from "../Controllers/courseController.js";
 import { checkEnrollment, verifyAdmin ,verifyJWT} from "../utils/verifyToken.js";
 import { upload } from "../MiddleWares/multer.middleware.js";
 const router = express.Router();
 router.get("/", verifyJWT, getAllCourses);
-router.get("/:id",checkEnrollment, verifyJWT, getCourseById);
+router.get("/:id", verifyJWT,checkEnrollment, getCourseById);
 router.post("/create", upload.single("thumbnail"),verifyJWT, verifyAdmin, createCourse);
 router.put("/update/:id", upload.single("thumbnail"), verifyJWT, verifyAdmin, updateCourse);
 router.put(
@@ -27,6 +31,10 @@ router.put(
 );
 router.delete("/:id", verifyJWT, verifyAdmin, deleteCourse);
 router.post("/:id/add-note", verifyJWT, verifyAdmin, addNoteBlock);
+router.get("/:courseId/get-quiz", verifyJWT, getCourseQuiz);
+router.post("/:courseId/submit-quiz", verifyJWT, submitQuiz);
+router.get("/:courseId/get-user-quiz-result", verifyJWT, getUserQuizResult);
+router.get("/:courseId/get-quiz-result-of-course", verifyJWT, getCourseQuizResults);
 
 router.post("/:id/add-media",
   upload.single("media"),

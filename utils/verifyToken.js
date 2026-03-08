@@ -98,9 +98,9 @@ export const verifyAdmin = (req, res, next) => {
 export const checkEnrollment = async (req, res, next) => {
   try {
 
-    const userId = req.user._id;
+    const userId = req.user.id;
     const role = req.user.role;
-    const { courseId } = req.params;
+    const { id } = req.params;
 
     // ✅ Admin can access without enrollment
     if (role === "admin") {
@@ -110,7 +110,7 @@ export const checkEnrollment = async (req, res, next) => {
     // ✅ Check enrollment for normal users
     const enrollment = await Enrollment.findOne({
       user: userId,
-      course: courseId,
+      course: id,
     });
 
     if (!enrollment) {
