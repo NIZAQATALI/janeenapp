@@ -16,7 +16,7 @@ import {
 import { checkEnrollment, verifyAdmin ,verifyJWT} from "../utils/verifyToken.js";
 import { upload } from "../MiddleWares/multer.middleware.js";
 const router = express.Router();
-router.get("/", getAllCourses);
+router.get("/", verifyJWT, getAllCourses);
 router.get("/:id",checkEnrollment, verifyJWT, getCourseById);
 router.post("/create", upload.single("thumbnail"),verifyJWT, verifyAdmin, createCourse);
 router.put("/update/:id", upload.single("thumbnail"), verifyJWT, verifyAdmin, updateCourse);
