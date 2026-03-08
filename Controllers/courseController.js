@@ -55,21 +55,69 @@ export const createCourse = async (req, res) => {
   }
 };
 
+// export const getAllCourses = async (req, res) => {
+//   try {
+//     const courses = await Course.find()
+//       .populate("instructor", "username email");
+
+//     res.status(200).json({
+//       success: true,
+//       count: courses.length,
+//       data: courses,
+//     });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: error.message });
+//   }
+// };
+import Enrollment from "../models/enrollment.js";
+
 export const getAllCourses = async (req, res) => {
   try {
+
+    const userId = req.user?._id; // if logged in
+
+    // 1️⃣ get all courses
     const courses = await Course.find()
       .populate("instructor", "username email");
 
+    let enrolledCourseIds = [];
+
+    // 2️⃣ get enrollments of user
+    if (userId) {
+      const enrollments = await Enrollment.find({ user: userId });
+
+      enrolledCourseIds = enrollments.map(
+        (enroll) => enroll.course.toString()
+      );
+    }
+
+    // 3️⃣ add flag
+    const updatedCourses = courses.map((course) => {
+
+      const courseObj = course.toObject();
+
+      courseObj.isEnrolled = enrolledCourseIds.includes(
+        course._id.toString()
+      );
+
+      return courseObj;
+    });
+
     res.status(200).json({
       success: true,
-      count: courses.length,
-      data: courses,
+      count: updatedCourses.length,
+      data: updatedCourses,
     });
+
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+
   }
 };
-
 
 export const getCourseById = async (req, res) => {
   try {
