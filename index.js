@@ -9,6 +9,7 @@ import { Server } from 'socket.io';
 
 import userRoute from './routes/users.js';
 import courseRoute from './routes/course.js';
+import contentRoute from './routes/content.js';
 import blogRoute from './routes/blog.js';
 import authRoute from './routes/auth.js';
 import notificationRoutes from "./routes/notification.js";
@@ -18,6 +19,8 @@ import geminiRoutes from "./routes/gaminai.js";
 import shareRoutes from "./routes/social.js";
 import { startAgenda } from './utils/agenda.js';
 import enrollmentRoutes from "./routes/enrollment.js";
+import swaggerUi from "swagger-ui-express";
+import swaggerSpec from "./utils/swagger.js";
 
 dotenv.config({ path: './config.env' });
 
@@ -102,10 +105,13 @@ app.get('/db-check', (req, res) => {
       : '❌ MongoDB is NOT connected.',
   });
 });
+/* ---------------------- SWAGGER DOCS ---------------------- */
 
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/v1/auth', authRoute);
 app.use('/api/v1/users', userRoute);
 app.use('/api/v1/course', courseRoute);
+app.use('/api/v1/content', contentRoute);
 app.use('/api/v1/blogs', blogRoute);
 app.use('/api/v1/badges', badgeRoute);
 app.use('/api/v1/leaderboards', leaderboardRoute);

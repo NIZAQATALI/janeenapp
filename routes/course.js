@@ -20,6 +20,18 @@ import {
 import { checkEnrollment, verifyAdmin ,verifyJWT} from "../utils/verifyToken.js";
 import { upload } from "../MiddleWares/multer.middleware.js";
 const router = express.Router();
+/**
+ * @swagger
+ * /api/v1/course:
+ *   get:
+ *     summary: Get all courses
+ *     tags: [Course]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of courses
+ */
 router.get("/", verifyJWT, getAllCourses);
 router.get("/:id", verifyJWT,checkEnrollment, getCourseById);
 router.post("/create", upload.single("thumbnail"),verifyJWT, verifyAdmin, createCourse);

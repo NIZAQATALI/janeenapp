@@ -32,6 +32,8 @@
     "qrcode": "^1.5.4",
     "resend": "^6.8.0",
     "socket.io": "^4.8.1",
-    "stripe": "^17.5.0"
+    "stripe": "^17.5.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
   }
 }
